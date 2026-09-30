@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe Ejecutivo - Calidad de Datos en Reservas y Efectividad de Preadmisión Quirúrgica</title>
+    <!-- Tipografías Institucionales -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Librerías Externas: Chart.js y XLSX (SheetJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-bordo: #7A1C28;
+            --primary-dark: #58121B;
+            --accent-gold: #C5A059;
+            --accent-gold-light: #E8D5B5;
+            
+            --bg-general: #F4F5F7;
+            --bg-card: #FFFFFF;
+            
+            --text-title: #1E293B;
+            --text-body: #4A5568;
+            --text-muted: #64748B;
+            
+            --status-green: #16A34A;
+            --status-green-bg: #DCFCE7;
+            --status-amber: #D97706;
+            --status-amber-bg: #FEF3C7;
+            --status-red: #DC2626;
+            --status-red-bg: #FEE2E2;
+            --status-slate: #475569;
+            --status-slate-bg: #F1F5F9;
+
+            --border-color: #E2E8F0;
+            --shadow-card: 0 4px 15px -1px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-general);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text-body);
+            line-height: 1.5;
+            padding: 30px 20px;
+        }
+
+        .report-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        details.collapsible-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+            overflow: hidden;
+            transition: all 0.2s ease-in-out;
+        }
+
+        details.collapsible-card summary {
+            padding: 24px 28px;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            background-color: var(--bg-card);
+        }
+
+        details.collapsible-card summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details.collapsible-card summary:hover {
+            background-color: #FAFBFD;
+        }
+
+        .summary-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding-right: 15px;
+        }
+
+        .toggle-icon {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--primary-bordo);
+            transition: transform 0.2s ease;
+            background: var(--status-slate-bg);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        details[open] .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-body {
+            padding: 0 28px 28px 28px;
+            border-top: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            padding-top: 20px;
+        }
+
+        .upload-subtitle {
+            font-size: 0.825rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .upload-buttons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .upload-btn-card {
+            background: #FAFBFD;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .upload-btn-card:hover {
+            border-color: var(--accent-gold);
+            background: #FFFDF9;
+        }
+
+        .upload-btn-card label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-title);
+            text-transform: uppercase;
+        }
+
+        .btn-input-file {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .btn-input-file input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--primary-bordo);
+            color: #FFFFFF;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        .custom-file-upload:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .file-status-indicator {
+            font-size: 0.775rem;
+            color: var(--text-muted);
+            font-style: italic;
+            word-break: break-all;
+        }
+
+        .file-status-indicator.loaded {
+            color: var(--status-green);
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, var(--primary-bordo) 0%, var(--primary-dark) 100%);
+            border-radius: 12px;
+            padding: 36px 40px;
+            color: #FFFFFF;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(122, 28, 40, 0.25);
+            border-bottom: 4px solid var(--accent-gold);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-card::after {
+            content: "";
+            position: absolute;
+            top: -40%;
+            right: -8%;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(197, 160, 89, 0.18) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .kicker {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .main-title {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #FFFFFF;
+            margin-bottom: 12px;
+            line-height: 1.25;
+        }
+
+        .header-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            font-size: 0.85rem;
+            color: #E2E8F0;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .meta-item strong {
+            color: var(--accent-gold-light);
+        }
+
+        /* --- CONTENEDORES DE BLOQUES Y ETAPAS --- */
+        .cascade-level {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 22px 26px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .cascade-level-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .cascade-level-title {
+            font-size: 0.825rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--primary-bordo);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cascade-level-title::before {
+            content: "";
+            display: inline-block;
+            width: 6px;
+            height: 14px;
+            background-color: var(--accent-gold);
+            border-radius: 2px;
+        }
+
+        .cascade-cards-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .kpi-box {
+            background: #FAFBFD;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 18px 20px;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .kpi-box.status-primary { border-left: 4px solid var(--primary-bordo); }
+        .kpi-box.status-green   { border-left: 4px solid var(--status-green); }
+        .kpi-box.status-amber   { border-left: 4px solid var(--status-amber); }
+        .kpi-box.status-red     { border-left: 4px solid var(--status-red); }
+
+        .kpi-box .box-title {
+            font-size: 0.725rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .kpi-box .box-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-title);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .kpi-box .box-subtext {
+            font-size: 0.8rem;
+            color: var(--text-body);
+            line-height: 1.35;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--bg-general);
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary-bordo);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: var(--accent-gold);
+            border-radius: 2px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+
+        th {
+            background-color: #F8FAFC;
+            color: var(--text-title);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.725rem;
+            letter-spacing: 0.5px;
+            padding: 12px 14px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-body);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #F8FAFC;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .badge-green { background-color: var(--status-green-bg); color: var(--status-green); }
+        .badge-amber { background-color: var(--status-amber-bg); color: var(--status-amber); }
+        .badge-red { background-color: var(--status-red-bg); color: var(--status-red); }
+        .badge-slate { background-color: var(--status-slate-bg); color: var(--status-slate); }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            margin-bottom: 24px;
+            background: #FAFBFD;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 900px) {
+            .grid-2col {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .assumptions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .assumption-card {
+            background-color: #F8FAFC;
+            border: 1px solid var(--border-color);
+            border-top: 3px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 18px;
+        }
+
+        .assumption-card-title {
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: var(--primary-bordo);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .assumption-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .assumption-list li {
+            font-size: 0.8rem;
+            color: var(--text-body);
+            margin-bottom: 6px;
+            padding-left: 14px;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .assumption-list li::before {
+            content: "•";
+            color: var(--accent-gold);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.775rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="report-container">
+
+        <!-- PANEL DE CARGA DE ARCHIVOS -->
+        <details class="collapsible-card">
+            <summary>
+                <div class="summary-content">
+                    <h2 class="section-title" style="margin:0;">📂 Actualización Mensual de Información</h2>
+                    <span class="badge badge-slate">Carga de Datos</span>
+                </div>
+                <span class="toggle-icon">▼</span>
+            </summary>
+            
+            <div class="collapsible-body">
+                <div class="upload-subtitle">Cargue los archivos Excel para procesar y recalcular el período 18/06/2026 al 24/09/2026.</div>
+                
+                <div class="upload-buttons-container">
+                    <div class="upload-btn-card">
+                        <label>Planilla de Reservas (Excel)</label>
+                        <label class="btn-input-file">
+                            <span class="custom-file-upload">📥 Cargar reservas_010626_al_240926.xlsx</span>
+                            <input type="file" id="inputReservas" accept=".xlsx, .xls">
+                        </label>
+                        <div id="statusReservas" class="file-status-indicator">Archivo actual: Datos cargados</div>
+                    </div>
+
+                    <div class="upload-btn-card">
+                        <label>Control de Preadmisión (Excel)</label>
+                        <label class="btn-input-file">
+                            <span class="custom-file-upload">📥 Cargar Control_pre_admision (2).xlsx</span>
+                            <input type="file" id="inputPreadmision" accept=".xlsx, .xls">
+                        </label>
+                        <div id="statusPreadmision" class="file-status-indicator">Archivo actual: Datos cargados</div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- HEADER INSTITUCIONAL -->
+        <header class="header-card">
+            <span class="kicker">DIRECCIÓN MÉDICA & GERENCIA DE OPERACIONES</span>
+            <h1 class="main-title">Informe de Calidad de Registro y Efectividad en Preadmisión Quirúrgica</h1>
+            <div class="header-meta">
+                <div class="meta-item">Período Evaluado: <strong id="metaPeriodo">18 de Junio al 24 de Septiembre de 2026</strong></div>
+                <div class="meta-item">Muestra Quirúrgica: <strong id="metaMuestraReservas">5,630 Reservas de Quirófano</strong></div>
+                <div class="meta-item">Muestra Preadmisión: <strong id="metaMuestraPreadmision">4,103 Solicitudes Procesadas</strong></div>
+            </div>
+        </header>
+
+        <!-- CRITERIOS Y ASSUMPTIONS (METODOLOGÍA EXPLICADA) -->
+        <details class="collapsible-card">
+            <summary>
+                <div class="summary-content">
+                    <h2 class="section-title" style="margin:0;">Criterios de Selección de Datos y Supuestos (Assumptions)</h2>
+                    <span class="badge badge-slate">Metodología de Análisis</span>
+                </div>
+                <span class="toggle-icon">▼</span>
+            </summary>
+            
+            <div class="collapsible-body">
+                <div class="assumptions-grid">
+                    <div class="assumption-card">
+                        <div class="assumption-card-title">Criterio Temporal Acotado</div>
+                        <ul class="assumption-list">
+                            <li><strong>Rango Analizado:</strong> Del 18/06/2026 al 24/09/2026 inclusive.</li>
+                            <li><strong>Consistencia:</strong> Se analizan las cirugías a partir de la fecha de inicio operativo de preadmisión.</li>
+                        </ul>
+                    </div>
+
+                    <div class="assumption-card">
+                        <div class="assumption-card-title">Criterios de DNI</div>
+                        <ul class="assumption-list">
+                            <li><strong>Completo:</strong> Cadena numérica limpia de entre 7 y 8 dígitos.</li>
+                            <li><strong>Erróneo:</strong> Cantidad distinta de dígitos (ej. CUIL/CUIT de 11 d.) o alfanuméricos.</li>
+                            <li><strong>Incompleto:</strong> Celdas vacías o sin registro.</li>
+                        </ul>
+                    </div>
+
+                    <div class="assumption-card">
+                        <div class="assumption-card-title">Criterios de Teléfono (Columna H)</div>
+                        <ul class="assumption-list">
+                            <li><strong>Fuente Única:</strong> Se lee exclusivamente la <strong>Columna H</strong> del archivo de Reservas.</li>
+                            <li><strong>Completo (≥8 dígitos):</strong> Se evalúa sobre la porción numérica limpia. El 85-90% son números válidos directos; el resto incluye separadores, prefijo <code>+54</code> o líneas dobles.</li>
+                            <li><strong>Erróneo / Incompleto:</strong> Secuencias de 1 a 7 dígitos. Celdas de solo texto (ej. <em>"NO TIENE"</em>) o vacías se descartan automáticamente.</li>
+                        </ul>
+                    </div>
+
+                    <div class="assumption-card">
+                        <div class="assumption-card-title">Independencia de Omisiones</div>
+                        <ul class="assumption-list">
+                            <li><strong>Faltantes no acumulativos:</strong> En una misma reserva pueden faltar el DNI y el teléfono simultáneamente, por lo que cada campo se analiza en su dimensión propia.</li>
+                            <li><strong>Regla de Éxito en Preadmisión:</strong> Confirmación en WhatsApp (<code>SI</code> / <code>Sí</code>) <strong>O</strong> estado <code>OK</code> en documentación.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- ETAPA 1: CALIDAD DE CARGA EN RESERVAS -->
+        <div class="cascade-level">
+            <div class="cascade-level-header">
+                <span class="cascade-level-title">Etapa 1: Calidad de Carga en Reservas Quirúrgicas</span>
+                <span class="badge badge-slate" id="badgeMuestraReservasCascade">Base: 5,630 Reservas</span>
+            </div>
+            <div class="cascade-cards-row">
+                <div class="kpi-box status-primary">
+                    <div class="box-title">Reservas Totales</div>
+                    <div class="box-value" id="kpiTotalReservas">5,630</div>
+                    <div class="box-subtext" id="kpiSubtextPeriodo">18/06/2026 al 24/09/2026</div>
+                </div>
+
+                <div class="kpi-box status-green">
+                    <div class="box-title">Datos Completos (DNI + Teléfono)</div>
+                    <div class="box-value" id="kpiAmbosOK">3,710</div>
+                    <div class="box-subtext" id="kpiAmbosOKPct">
+                        <strong>65.9%</strong> con contacto integral (3,710 / 5,630)
+                    </div>
+                </div>
+
+                <div class="kpi-box status-red">
+                    <div class="box-title">Datos Incompletos o Faltantes</div>
+                    <div class="box-value" id="kpiDatosIncompletos">1,920</div>
+                    <div class="box-subtext" id="kpiDatosIncompletosPct">
+                        <strong>34.1%</strong> con DNI o Teléfono inválido (1,920 / 5,630)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TENDENCIA TEMPORAL -->
+        <div class="card">
+            <div class="section-header">
+                <h2 class="section-title">Tendencia y Evolución Temporal de Carga</h2>
+                <span class="badge badge-red" id="badgeTendencia">Alerta: Tendencia Descendente</span>
+            </div>
+
+            <p style="font-size: 0.875rem; color: var(--text-body); margin-bottom: 20px;">
+                Evolución mensual de la calidad en la carga de datos telefónicos y DNI en la reserva de turnos quirúrgicos (a partir del 18 de Junio de 2026).
+            </p>
+
+            <div class="chart-wrapper">
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <div class="table-responsive">
+                <table id="tableEvolucion">
+                    <thead>
+                        <tr>
+                            <th>Mes de Cirugía</th>
+                            <th>Total Reservas</th>
+                            <th>DNI Completo (%)</th>
+                            <th>Teléfono Completo (%)</th>
+                            <th>Ambos Integrales (%)</th>
+                            <th>Estado de Calidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Junio 2026 (18-30)</strong></td>
+                            <td>572</td>
+                            <td>93.5%</td>
+                            <td>78.0%</td>
+                            <td><strong>76.2%</strong></td>
+                            <td><span class="badge badge-green">Línea de Base</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Julio 2026</strong></td>
+                            <td>1,440</td>
+                            <td>90.8%</td>
+                            <td>74.3%</td>
+                            <td><strong>70.6%</strong></td>
+                            <td><span class="badge badge-amber">Caída Leve (-5.6%)</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Agosto 2026</strong></td>
+                            <td>1,527</td>
+                            <td>88.5%</td>
+                            <td>66.4%</td>
+                            <td><strong>63.7%</strong></td>
+                            <td><span class="badge badge-amber">Deterioro Moderado (-12.5%)</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Septiembre 2026</strong></td>
+                            <td>1,509</td>
+                            <td>91.0%</td>
+                            <td>61.1%</td>
+                            <td><strong>59.2%</strong></td>
+                            <td><span class="badge badge-red">Caída Crítica (-17.0%)</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TABLA COMPARATIVA RESUMEN: INTEGRIDAD DNI vs TELÉFONO -->
+        <div class="card">
+            <div class="section-header">
+                <h2 class="section-title">Integridad de Datos en Reservas</h2>
+                <span class="badge badge-slate" id="badgeMuestraUnificada">Muestra: 5,630</span>
+            </div>
+            <div class="table-responsive">
+                <table id="tableIntegridadUnificada">
+                    <thead>
+                        <tr>
+                            <th>Condición del Campo</th>
+                            <th style="text-align: center;">DNI</th>
+                            <th style="text-align: center;">Teléfono</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Dato Válido y Completo</strong></td>
+                            <td style="text-align: center;"><span class="badge badge-green" id="uDniOk">5,103 (90.6%)</span></td>
+                            <td style="text-align: center;"><span class="badge badge-green" id="uTelOk">3,846 (68.3%)</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Campo Incompleto / Vacío</strong></td>
+                            <td style="text-align: center;"><span class="badge badge-amber" id="uDniVacio">477 (8.5%)</span></td>
+                            <td style="text-align: center;"><span class="badge badge-amber" id="uTelVacio">834 (14.8%)</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Formato Erróneo / Inválido</strong></td>
+                            <td style="text-align: center;"><span class="badge badge-red" id="uDniErr">50 (0.9%)</span></td>
+                            <td style="text-align: center;"><span class="badge badge-red" id="uTelErr">950 (16.9%)</span></td>
+                        </tr>
+                        <tr style="background-color: #F8FAFC; font-weight: bold;">
+                            <td>Total Sin Contacto Válido</td>
+                            <td style="text-align: center; color: var(--status-red);" id="uDniTotalSin">527 (9.4%)</td>
+                            <td style="text-align: center; color: var(--status-red);" id="uTelTotalSin">1,784 (31.7%)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BLOQUE INDEPENDIENTE: MÉDICOS SIN DNI Y MÉDICOS SIN TELÉFONO -->
+        <div class="grid-2col">
+            
+            <!-- TABLA 1: MÉDICOS QUE NO PASAN DNI -->
+            <div class="card">
+                <div class="section-header">
+                    <h2 class="section-title">Médicos que No Pasan DNI</h2>
+                    <span class="badge badge-red">Omisiones de DNI</span>
+                </div>
+                <div class="table-responsive">
+                    <table id="tableMedicosSinDNI">
+                        <thead>
+                            <tr>
+                                <th>Profesional</th>
+                                <th style="text-align: center;">Sin DNI Válido</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Kido, Gustavo</strong></td><td style="text-align: center;"><strong>76</strong></td></tr>
+                            <tr><td><strong>Freschi, Andrés María</strong></td><td style="text-align: center;"><strong>52</strong></td></tr>
+                            <tr><td><strong>No Especificado / Genérico</strong></td><td style="text-align: center;"><strong>27</strong></td></tr>
+                            <tr><td><strong>Mastronardi, Luis</strong></td><td style="text-align: center;"><strong>14</strong></td></tr>
+                            <tr><td><strong>Rodríguez, Alfredo Eduardo</strong></td><td style="text-align: center;"><strong>11</strong></td></tr>
+                            <tr><td><strong>Wagner, Alan Martin</strong></td><td style="text-align: center;"><strong>10</strong></td></tr>
+                            <tr><td><strong>Crispin, Federico Luis</strong></td><td style="text-align: center;"><strong>9</strong></td></tr>
+                            <tr><td><strong>Buchuk, Pablo Alexis</strong></td><td style="text-align: center;"><strong>8</strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TABLA 2: MÉDICOS QUE NO PASAN TELÉFONO -->
+            <div class="card">
+                <div class="section-header">
+                    <h2 class="section-title">Médicos que No Pasan Teléfono</h2>
+                    <span class="badge badge-red">Omisiones de Teléfono</span>
+                </div>
+                <div class="table-responsive">
+                    <table id="tableMedicosSinTel">
+                        <thead>
+                            <tr>
+                                <th>Profesional</th>
+                                <th style="text-align: center;">Sin Teléfono Válido</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Kido, Gustavo</strong></td><td style="text-align: center;"><strong>94</strong></td></tr>
+                            <tr><td><strong>Rugna, Daniel Alberto</strong></td><td style="text-align: center;"><strong>92</strong></td></tr>
+                            <tr><td><strong>Rodríguez, Alfredo Eduardo</strong></td><td style="text-align: center;"><strong>77</strong></td></tr>
+                            <tr><td><strong>Wagner, Alan Martin</strong></td><td style="text-align: center;"><strong>43</strong></td></tr>
+                            <tr><td><strong>Lulkin, Ezequiel</strong></td><td style="text-align: center;"><strong>41</strong></td></tr>
+                            <tr><td><strong>Chouhy, Eugenio</strong></td><td style="text-align: center;"><strong>40</strong></td></tr>
+                            <tr><td><strong>No Especificado / Genérico</strong></td><td style="text-align: center;"><strong>39</strong></td></tr>
+                            <tr><td><strong>Freschi, Andrés María</strong></td><td style="text-align: center;"><strong>31</strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ETAPA 2: EFECTIVIDAD EN PREADMISIÓN -->
+        <div class="cascade-level">
+            <div class="cascade-level-header">
+                <span class="cascade-level-title">Etapa 2: Efectividad de Contacto y Confirmación</span>
+                <span class="badge badge-slate" id="badgeMuestraPreadmCascade">Base: 4,103 Procesadas</span>
+            </div>
+            <div class="cascade-cards-row">
+                <div class="kpi-box status-primary">
+                    <div class="box-title">Total Solicitudes Procesadas</div>
+                    <div class="box-value" id="kpiTotalPreadmision">4,103</div>
+                    <div class="box-subtext">Pacientes contactados vía WhatsApp / Gestión de ingreso</div>
+                </div>
+
+                <div class="kpi-box status-amber">
+                    <div class="box-title">Contestaron / Confirmaron</div>
+                    <div class="box-value" id="kpiPreadmisionOK">1,214</div>
+                    <div class="box-subtext" id="kpiPreadmisionOKPct">
+                        <strong>29.6%</strong> confirmaron preadmisión (1,214 / 4,103)
+                    </div>
+                </div>
+
+                <div class="kpi-box status-red">
+                    <div class="box-title">Sin Respuesta Confirmada</div>
+                    <div class="box-value" id="kpiPreadmisionSinResp">2,889</div>
+                    <div class="box-subtext" id="kpiPreadmisionSinRespPct">
+                        <strong>70.4%</strong> sin confirmación previa (2,889 / 4,103)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANÁLISIS DE CONTESTACIÓN POR MÉDICO -->
+        <div class="card">
+            <div class="section-header">
+                <h2 class="section-title">Distribución de Contestaciones por Médico Cirujano</h2>
+                <span class="badge badge-slate">Preadmisión Quirúrgica</span>
+            </div>
+            
+            <div class="grid-2col">
+                <div>
+                    <h3 style="font-size: 0.875rem; color: var(--status-green); margin-bottom: 12px; text-transform: uppercase; font-weight: 700;">
+                        ✔ Médicos con Mayor Adhesión / Respuesta
+                    </h3>
+                    <div class="table-responsive">
+                        <table id="tableMedicosAltaRespuesta">
+                            <thead>
+                                <tr>
+                                    <th>Cirujano</th>
+                                    <th>Respuestas / Total</th>
+                                    <th>Tasa (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>De La Fuente, Martín Osvaldo</strong></td><td>30 / 43</td><td><span class="badge badge-green">69.8%</span></td></tr>
+                                <tr><td><strong>Mastropierro, Javier Bautista</strong></td><td>18 / 30</td><td><span class="badge badge-green">60.0%</span></td></tr>
+                                <tr><td><strong>Avellaneda, Nicolás Luis</strong></td><td>10 / 17</td><td><span class="badge badge-green">58.8%</span></td></tr>
+                                <tr><td><strong>Ferraina, Pedro Antonio</strong></td><td>10 / 18</td><td><span class="badge badge-green">55.6%</span></td></tr>
+                                <tr><td><strong>Ustarroz, Alberto Manuel</strong></td><td>25 / 48</td><td><span class="badge badge-green">52.1%</span></td></tr>
+                                <tr><td><strong>Gorosito, Fernando</strong></td><td>29 / 56</td><td><span class="badge badge-green">51.8%</span></td></tr>
+                                <tr><td><strong>Falco, Jorge Eduardo</strong></td><td>19 / 37</td><td><span class="badge badge-green">51.4%</span></td></tr>
+                                <tr><td><strong>Dip, Fernando Daniel</strong></td><td>53 / 120</td><td><span class="badge badge-amber">44.2%</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 style="font-size: 0.875rem; color: var(--status-red); margin-bottom: 12px; text-transform: uppercase; font-weight: 700;">
+                        ✖ Médicos con Menor Adhesión / Sin Respuesta
+                    </h3>
+                    <div class="table-responsive">
+                        <table id="tableMedicosBajaRespuesta">
+                            <thead>
+                                <tr>
+                                    <th>Cirujano</th>
+                                    <th>Respuestas / Total</th>
+                                    <th>Tasa (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Lulkin, Ezequiel</strong></td><td>0 / 35</td><td><span class="badge badge-red">0.0%</span></td></tr>
+                                <tr><td><strong>Argente, Sebastián</strong></td><td>0 / 16</td><td><span class="badge badge-red">0.0%</span></td></tr>
+                                <tr><td><strong>Flaherty, Federico</strong></td><td>2 / 66</td><td><span class="badge badge-red">3.0%</span></td></tr>
+                                <tr><td><strong>Rodríguez, Alfredo Eduardo</strong></td><td>3 / 80</td><td><span class="badge badge-red">3.8%</span></td></tr>
+                                <tr><td><strong>Villanustre, Bárbara</strong></td><td>1 / 22</td><td><span class="badge badge-red">4.5%</span></td></tr>
+                                <tr><td><strong>Di Carlo, Leandro</strong></td><td>2 / 31</td><td><span class="badge badge-amber">6.5%</span></td></tr>
+                                <tr><td><strong>Freschi, Andrés María</strong></td><td>2 / 25</td><td><span class="badge badge-amber">8.0%</span></td></tr>
+                                <tr><td><strong>Kido, Gustavo</strong></td><td>5 / 50</td><td><span class="badge badge-amber">10.0%</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p><strong>Sanatorio Otamendi</strong> | Dirección Médica y Control de Gestión de Admisión Quirúrgica</p>
+            <p>Datos acotados al período 18/06/2026 al 24/09/2026.</p>
+        </footer>
+
+    </div>
+
+    <!-- SCRIPT DE FILTRADO Y ACTUALIZACIÓN DINÁMICA -->
+    <script>
+        let trendChartInstance = null;
+
+        const DATE_MIN = new Date(2026, 5, 18, 0, 0, 0); // 18 de Junio
+        const DATE_MAX = new Date(2026, 8, 24, 23, 59, 59); // 24 de Septiembre
+
+        function parseExcelDate(val) {
+            if (!val) return null;
+            if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+
+            if (typeof val === 'number') {
+                return new Date(Math.round((val - 25569) * 86400 * 1000));
+            }
+
+            if (typeof val === 'string') {
+                let clean = val.trim();
+                let parts = clean.split(/[\/\-\.]/);
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) {
+                        let y = parseInt(parts[0], 10);
+                        let m = parseInt(parts[1], 10) - 1;
+                        let d = parseInt(parts[2], 10);
+                        return new Date(y, m, d);
+                    } else {
+                        let d = parseInt(parts[0], 10);
+                        let m = parseInt(parts[1], 10) - 1;
+                        let y = parseInt(parts[2], 10);
+                        if (y < 100) y += 2000;
+                        return new Date(y, m, d);
+                    }
+                }
+                let parsed = new Date(clean);
+                if (!isNaN(parsed.getTime())) return parsed;
+            }
+            return null;
+        }
+
+        function isDateInRange(d) {
+            if (!d || isNaN(d.getTime())) return false;
+            return d >= DATE_MIN && d <= DATE_MAX;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart(
+                ['Junio (18-30)', 'Julio 2026', 'Agosto 2026', 'Septiembre 2026'],
+                [93.5, 90.8, 88.5, 91.0],
+                [78.0, 74.3, 66.4, 61.1],
+                [76.2, 70.6, 63.7, 59.2]
+            );
+
+            document.getElementById('inputReservas').addEventListener('change', handleReservasUpload);
+            document.getElementById('inputPreadmision').addEventListener('change', handlePreadmisionUpload);
+        });
+
+        function initChart(labels, dniData, telData, ambosData) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+            
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'DNI Completo (%)',
+                            data: dniData,
+                            borderColor: '#16A34A',
+                            backgroundColor: '#16A34A',
+                            borderWidth: 2.5,
+                            pointRadius: 5,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'Teléfono Completo (%)',
+                            data: telData,
+                            borderColor: '#D97706',
+                            backgroundColor: '#D97706',
+                            borderWidth: 2.5,
+                            pointRadius: 5,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'Ambos Integrales (%)',
+                            data: ambosData,
+                            borderColor: '#7A1C28',
+                            backgroundColor: '#7A1C28',
+                            borderWidth: 3,
+                            pointRadius: 6,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { font: { family: "'Inter', sans-serif", size: 12, weight: '600' }, usePointStyle: true }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: { callback: function(val) { return val + '%'; } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function handleReservasUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('statusReservas').textContent = "Cargado: " + file.name;
+            document.getElementById('statusReservas').classList.add('loaded');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                // Cabecera exacta de la Columna H (índice 7)
+                let headerRow = XLSX.utils.sheet_to_json(firstSheet, { header: 1 })[0] || [];
+                let colH_Name = headerRow[7] || null;
+
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+                processReservasData(rows, colH_Name);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processReservasData(rawRows, colH_Name) {
+            let rows = rawRows.filter(r => {
+                let fechaVal = r['FECHA'] || r['Fecha'] || r['FECHA CIRUGIA'] || r['FECHA_CIRUGIA'] || r['Dia'] || '';
+                let d = parseExcelDate(fechaVal);
+                return d ? isDateInRange(d) : true;
+            });
+
+            let total = rows.length;
+            if (total === 0) {
+                alert("No se encontraron reservas con las fechas indicadas.");
+                return;
+            }
+
+            let dniOK = 0, dniVaciod = 0, dniError = 0;
+            let telOK = 0, telVaciod = 0, telError = 0;
+            let ambosOK = 0;
+
+            let medicosSinDNI = {};
+            let medicosSinTel = {};
+            let mensualMap = {};
+
+            rows.forEach(r => {
+                let dniVal = String(r['DNI'] || r['dni'] || r['Documento'] || '').trim();
+
+                // LECTURA EXCLUSIVA DE LA COLUMNA H
+                let telVal = '';
+                if (colH_Name && r[colH_Name] !== undefined && r[colH_Name] !== null) {
+                    telVal = String(r[colH_Name]).trim();
+                } else {
+                    telVal = String(r['TEL'] || r['Tel'] || '').trim();
+                }
+
+                let medVal = String(r['MEDICO'] || r['Médico'] || r['Profesional'] || 'No Especificado').trim();
+                let fechaVal = r['FECHA'] || r['Fecha'] || r['FECHA CIRUGIA'] || '';
+
+                // Evaluación DNI
+                let isDniOK = false;
+                let cleanDNI = dniVal.replace(/\D/g, '');
+                if (!dniVal || dniVal.toLowerCase() === 'nan' || dniVal === '') {
+                    dniVaciod++;
+                    medicosSinDNI[medVal] = (medicosSinDNI[medVal] || 0) + 1;
+                } else if (cleanDNI.length >= 7 && cleanDNI.length <= 8) {
+                    dniOK++;
+                    isDniOK = true;
+                } else {
+                    dniError++;
+                    medicosSinDNI[medVal] = (medicosSinDNI[medVal] || 0) + 1;
+                }
+
+                // Evaluación Teléfono exclusiva de la columna H
+                let isTelOK = false;
+                let cleanTel = telVal.replace(/\D/g, '');
+                if (!telVal || telVal.toLowerCase() === 'nan' || telVal === '') {
+                    telVaciod++;
+                    medicosSinTel[medVal] = (medicosSinTel[medVal] || 0) + 1;
+                } else if (cleanTel.length >= 8) {
+                    telOK++;
+                    isTelOK = true;
+                } else {
+                    telError++;
+                    medicosSinTel[medVal] = (medicosSinTel[medVal] || 0) + 1;
+                }
+
+                if (isDniOK && isTelOK) ambosOK++;
+
+                let d = parseExcelDate(fechaVal);
+                let monthKey = d ? d.toLocaleString('es-ES', { month: 'long', year: 'numeric' }) : "Período Acotado";
+                if (!mensualMap[monthKey]) {
+                    mensualMap[monthKey] = { total: 0, dniOK: 0, telOK: 0, ambosOK: 0 };
+                }
+                mensualMap[monthKey].total++;
+                if (isDniOK) mensualMap[monthKey].dniOK++;
+                if (isTelOK) mensualMap[monthKey].telOK++;
+                if (isDniOK && isTelOK) mensualMap[monthKey].ambosOK++;
+            });
+
+            let incompletos = total - ambosOK;
+            let ambosPct = ((ambosOK / total) * 100).toFixed(1);
+            let incompletosPct = ((incompletos / total) * 100).toFixed(1);
+
+            document.getElementById('kpiTotalReservas').textContent = total.toLocaleString();
+            document.getElementById('metaMuestraReservas').textContent = total.toLocaleString() + " Reservas Quirúrgicas";
+            document.getElementById('badgeMuestraReservasCascade').textContent = `Base: ${total.toLocaleString()} Reservas`;
+            document.getElementById('badgeMuestraUnificada').textContent = `Muestra: ${total.toLocaleString()}`;
+
+            document.getElementById('kpiAmbosOK').textContent = ambosOK.toLocaleString();
+            document.getElementById('kpiAmbosOKPct').innerHTML = `<strong>${ambosPct}%</strong> con contacto integral (${ambosOK.toLocaleString()} / ${total.toLocaleString()})`;
+
+            document.getElementById('kpiDatosIncompletos').textContent = incompletos.toLocaleString();
+            document.getElementById('kpiDatosIncompletosPct').innerHTML = `<strong>${incompletosPct}%</strong> con DNI o Teléfono inválido (${incompletos.toLocaleString()} / ${total.toLocaleString()})`;
+
+            // Actualizar Tabla Resumen Comparativo
+            let dniSinTotal = dniVaciod + dniError;
+            let telSinTotal = telVaciod + telError;
+            document.getElementById('uDniOk').textContent = `${dniOK.toLocaleString()} (${((dniOK/total)*100).toFixed(1)}%)`;
+            document.getElementById('uTelOk').textContent = `${telOK.toLocaleString()} (${((telOK/total)*100).toFixed(1)}%)`;
+
+            document.getElementById('uDniVacio').textContent = `${dniVaciod.toLocaleString()} (${((dniVaciod/total)*100).toFixed(1)}%)`;
+            document.getElementById('uTelVacio').textContent = `${telVaciod.toLocaleString()} (${((telVaciod/total)*100).toFixed(1)}%)`;
+
+            document.getElementById('uDniErr').textContent = `${dniError.toLocaleString()} (${((dniError/total)*100).toFixed(1)}%)`;
+            document.getElementById('uTelErr').textContent = `${telError.toLocaleString()} (${((telError/total)*100).toFixed(1)}%)`;
+
+            document.getElementById('uDniTotalSin').textContent = `${dniSinTotal.toLocaleString()} (${((dniSinTotal/total)*100).toFixed(1)}%)`;
+            document.getElementById('uTelTotalSin').textContent = `${telSinTotal.toLocaleString()} (${((telSinTotal/total)*100).toFixed(1)}%)`;
+
+            // Actualizar Tablas Separadas por Profesional
+            updateMedicosList('tableMedicosSinDNI', medicosSinDNI);
+            updateMedicosList('tableMedicosSinTel', medicosSinTel);
+
+            // Actualizar Evolución
+            updateEvolucion(mensualMap);
+        }
+
+        function updateMedicosList(tableId, dict) {
+            let sorted = Object.keys(dict).map(k => [k, dict[k]]).sort((a,b) => b[1] - a[1]).slice(0, 8);
+            let rowsHtml = sorted.map(item => `
+                <tr>
+                    <td><strong>${item[0]}</strong></td>
+                    <td style="text-align: center;"><strong>${item[1]}</strong></td>
+                </tr>
+            `).join('');
+            document.querySelector(`#${tableId} tbody`).innerHTML = rowsHtml;
+        }
+
+        function updateEvolucion(mensualMap) {
+            let labels = Object.keys(mensualMap);
+            if (labels.length === 0) return;
+
+            let dniData = [], telData = [], ambosData = [];
+            let tbodyHtml = '';
+
+            labels.forEach(m => {
+                let d = mensualMap[m];
+                let dPct = ((d.dniOK / d.total) * 100).toFixed(1);
+                let tPct = ((d.telOK / d.total) * 100).toFixed(1);
+                let aPct = ((d.ambosOK / d.total) * 100).toFixed(1);
+
+                dniData.push(dPct);
+                telData.push(tPct);
+                ambosData.push(aPct);
+
+                tbodyHtml += `
+                    <tr>
+                        <td><strong>${m}</strong></td>
+                        <td>${d.total.toLocaleString()}</td>
+                        <td>${dPct}%</td>
+                        <td>${tPct}%</td>
+                        <td><strong>${aPct}%</strong></td>
+                        <td><span class="badge badge-slate">Acotado</span></td>
+                    </tr>
+                `;
+            });
+
+            document.querySelector('#tableEvolucion tbody').innerHTML = tbodyHtml;
+            initChart(labels, dniData, telData, ambosData);
+        }
+
+        function handlePreadmisionUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('statusPreadmision').textContent = "Cargado: " + file.name;
+            document.getElementById('statusPreadmision').classList.add('loaded');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                let sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('preadmi')) || workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                
+                processPreadmisionData(rows);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processPreadmisionData(rawRows) {
+            let rows = rawRows.filter(r => {
+                let fechaVal = r['FECHA'] || r['Fecha'] || r['FECHA CIRUGIA'] || r['FECHA INGRESO'] || r['FECHA SOLICITUD'] || '';
+                let d = parseExcelDate(fechaVal);
+                return d ? isDateInRange(d) : true;
+            });
+
+            let total = rows.length;
+            if (total === 0) {
+                alert("No se encontraron registros de preadmisión.");
+                return;
+            }
+
+            let respondieron = 0;
+            let medicosStats = {};
+
+            rows.forEach(r => {
+                let medVal = String(r['MEDICO'] || r['Médico'] || r['Profesional'] || 'No Especificado').trim();
+                let wspVal = String(r['WSP CONTESTO'] || r['WSP'] || r['WhatsApp'] || '').trim().toUpperCase();
+                
+                let docOK = Object.keys(r).some(k => k.match(/ESTADO|DOC|INGRESO/i) && String(r[k]).toUpperCase() === 'OK');
+                let ok = (wspVal === 'SI' || wspVal === 'SÍ' || docOK);
+                if (ok) respondieron++;
+
+                if (!medicosStats[medVal]) medicosStats[medVal] = { total: 0, ok: 0 };
+                medicosStats[medVal].total++;
+                if (ok) medicosStats[medVal].ok++;
+            });
+
+            let sinResp = total - respondieron;
+            let respPct = ((respondieron / total) * 100).toFixed(1);
+            let sinRespPct = ((sinResp / total) * 100).toFixed(1);
+
+            document.getElementById('kpiTotalPreadmision').textContent = total.toLocaleString();
+            document.getElementById('badgeMuestraPreadmCascade').textContent = `Base: ${total.toLocaleString()} Procesadas`;
+
+            document.getElementById('kpiPreadmisionOK').textContent = respondieron.toLocaleString();
+            document.getElementById('kpiPreadmisionOKPct').innerHTML = `<strong>${respPct}%</strong> confirmaron preadmisión (${respondieron.toLocaleString()} / ${total.toLocaleString()})`;
+            
+            document.getElementById('kpiPreadmisionSinResp').textContent = sinResp.toLocaleString();
+            document.getElementById('kpiPreadmisionSinRespPct').innerHTML = `<strong>${sinRespPct}%</strong> sin confirmación previa (${sinResp.toLocaleString()} / ${total.toLocaleString()})`;
+
+            document.getElementById('metaMuestraPreadmision').textContent = `${total.toLocaleString()} Solicitudes Procesadas`;
+
+            let list = Object.keys(medicosStats).map(k => {
+                let t = medicosStats[k].total;
+                let o = medicosStats[k].ok;
+                return { medico: k, total: t, ok: o, rate: (o/t)*100 };
+            }).filter(x => x.total >= 8);
+
+            let alta = [...list].sort((a,b) => b.rate - a.rate).slice(0, 8);
+            let baja = [...list].sort((a,b) => a.rate - b.rate).slice(0, 8);
+
+            document.querySelector('#tableMedicosAltaRespuesta tbody').innerHTML = alta.map(x => `
+                <tr><td><strong>${x.medico}</strong></td><td>${x.ok} / ${x.total}</td><td><span class="badge badge-green">${x.rate.toFixed(1)}%</span></td></tr>
+            `).join('');
+
+            document.querySelector('#tableMedicosBajaRespuesta tbody').innerHTML = baja.map(x => `
+                <tr><td><strong>${x.medico}</strong></td><td>${x.ok} / ${x.total}</td><td><span class="badge badge-red">${x.rate.toFixed(1)}%</span></td></tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
