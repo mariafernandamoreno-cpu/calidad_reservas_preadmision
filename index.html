@@ -54,9 +54,148 @@
             padding: 30px 20px;
         }
 
+        /* --- MODAL DE LOGIN INSTITUCIONAL --- */
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, rgba(88, 18, 27, 0.95) 0%, rgba(20, 24, 33, 0.98) 100%);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: #FFFFFF;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 14px;
+            padding: 40px 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            border-top: 5px solid var(--accent-gold);
+            text-align: center;
+        }
+
+        .login-logo {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--primary-bordo);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .login-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .login-field {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .login-field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-title);
+            margin-bottom: 6px;
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-title);
+            background: #F8FAFC;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .login-field input:focus {
+            border-color: var(--primary-bordo);
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(122, 28, 40, 0.15);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--primary-bordo) 0%, var(--primary-dark) 100%);
+            color: #FFFFFF;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            opacity: 0.92;
+        }
+
+        .login-error {
+            display: none;
+            margin-top: 14px;
+            padding: 10px;
+            background-color: var(--status-red-bg);
+            color: var(--status-red);
+            font-size: 0.775rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
         .report-container {
             max-width: 1200px;
             margin: 0 auto;
+        }
+
+        /* --- BARRA SUPERIOR DE SESIÓN --- */
+        .session-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #FFFFFF;
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            font-size: 0.775rem;
+            color: var(--text-muted);
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--status-red);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--status-red-bg);
+            border-color: var(--status-red);
         }
 
         details.collapsible-card {
@@ -194,6 +333,7 @@
             font-style: normal;
         }
 
+        /* --- HEADER PRINCIPAL INSTITUCIONAL (SIN FRASE) --- */
         .header-card {
             background: linear-gradient(135deg, var(--primary-bordo) 0%, var(--primary-dark) 100%);
             border-radius: 12px;
@@ -216,17 +356,6 @@
             background: radial-gradient(circle, rgba(197, 160, 89, 0.18) 0%, rgba(0,0,0,0) 70%);
             border-radius: 50%;
             pointer-events: none;
-        }
-
-        .kicker {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--accent-gold);
-            margin-bottom: 8px;
-            display: block;
         }
 
         .main-title {
@@ -509,7 +638,35 @@
 </head>
 <body>
 
-    <div class="report-container">
+    <!-- OVERLAY DE INICIO DE SESIÓN -->
+    <div id="loginOverlay">
+        <div class="login-card">
+            <div class="login-logo">Sanatorio Otamendi</div>
+            <div class="login-subtitle">Control de Gestión & Admisión Quirúrgica</div>
+            
+            <form id="formLogin" onsubmit="handleLoginSubmit(event)">
+                <div class="login-field">
+                    <label for="inputUsuario">Usuario</label>
+                    <input type="text" id="inputUsuario" placeholder="Ingrese su usuario" autocomplete="username" required>
+                </div>
+                <div class="login-field">
+                    <label for="inputPassword">Contraseña</label>
+                    <input type="password" id="inputPassword" placeholder="Ingrese su contraseña" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn-login">Ingresar al Informe</button>
+                <div id="loginErrorMsg" class="login-error">Credenciales incorrectas. Verifique usuario y contraseña.</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL DEL INFORME -->
+    <div class="report-container" id="reportContent" style="display: none;">
+
+        <!-- BARRA SUPERIOR DE SESIÓN -->
+        <div class="session-bar">
+            <span>Usuario autenticado: <strong style="color: var(--text-title);">OTAMENDI</strong></span>
+            <button class="btn-logout" onclick="handleLogout()">Cerrar Sesión</button>
+        </div>
 
         <!-- PANEL DE CARGA DE ARCHIVOS -->
         <details class="collapsible-card">
@@ -546,9 +703,8 @@
             </div>
         </details>
 
-        <!-- HEADER INSTITUCIONAL -->
+        <!-- HEADER INSTITUCIONAL (SIN LA FRASE DE DIRECCIÓN MÉDICA) -->
         <header class="header-card">
-            <span class="kicker">DIRECCIÓN MÉDICA & GERENCIA DE OPERACIONES</span>
             <h1 class="main-title">Informe de Calidad de Registro y Efectividad en Preadmisión Quirúrgica</h1>
             <div class="header-meta">
                 <div class="meta-item">Período Evaluado: <strong id="metaPeriodo">18 de Junio al 24 de Septiembre de 2026</strong></div>
@@ -557,7 +713,7 @@
             </div>
         </header>
 
-        <!-- CRITERIOS Y ASSUMPTIONS (METODOLOGÍA EXPLICADA) -->
+        <!-- CRITERIOS Y ASSUMPTIONS (METODOLOGÍA CONSOLIDADA) -->
         <details class="collapsible-card">
             <summary>
                 <div class="summary-content">
@@ -900,14 +1056,52 @@
         </div>
 
         <footer class="footer">
-            <p><strong>Sanatorio Otamendi</strong> | Dirección Médica y Control de Gestión de Admisión Quirúrgica</p>
+            <p><strong>Sanatorio Otamendi</strong> | Control de Gestión de Admisión Quirúrgica</p>
             <p>Datos acotados al período 18/06/2026 al 24/09/2026.</p>
         </footer>
 
     </div>
 
-    <!-- SCRIPT DE FILTRADO Y ACTUALIZACIÓN DINÁMICA -->
+    <!-- SCRIPT DE AUTENTICACIÓN, FILTRADO Y ACTUALIZACIÓN DINÁMICA -->
     <script>
+        // --- CONTROL DE LOGIN Y SESIÓN ---
+        const AUTH_USER = "OTAMENDI";
+        const AUTH_PASS = "Otamendi2026";
+
+        function checkSession() {
+            if (sessionStorage.getItem("otamendi_auth") === "true") {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('reportContent').style.display = 'block';
+                document.body.style.overflow = 'auto';
+            } else {
+                document.getElementById('loginOverlay').style.display = 'flex';
+                document.getElementById('reportContent').style.display = 'none';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const u = document.getElementById('inputUsuario').value.trim();
+            const p = document.getElementById('inputPassword').value.trim();
+            const errEl = document.getElementById('loginErrorMsg');
+
+            if (u === AUTH_USER && p === AUTH_PASS) {
+                sessionStorage.setItem("otamendi_auth", "true");
+                errEl.style.display = 'none';
+                checkSession();
+            } else {
+                errEl.style.display = 'block';
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem("otamendi_auth");
+            document.getElementById('inputPassword').value = '';
+            document.getElementById('loginErrorMsg').style.display = 'none';
+            checkSession();
+        }
+
         let trendChartInstance = null;
 
         const DATE_MIN = new Date(2026, 5, 18, 0, 0, 0); // 18 de Junio
@@ -950,6 +1144,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            checkSession();
+
             initChart(
                 ['Junio (18-30)', 'Julio 2026', 'Agosto 2026', 'Septiembre 2026'],
                 [93.5, 90.8, 88.5, 91.0],
